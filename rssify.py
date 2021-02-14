@@ -1,3 +1,6 @@
+from __future__ import print_function
+
+import traceback
 import configparser
 from datetime import datetime
 import requests
@@ -10,23 +13,7 @@ import urlparse
 import sys
 import re
 
-if len(sys.argv) > 1:
-    config_fn = sys.argv[1]
-else:
-    config_fn = "config.ini"
-
-config = configparser.ConfigParser()
-config.read(config_fn)
-
-try:
-    directory = config.get("options", "directory")
-except:
-    directory = "."
-
-config.remove_section("options")
-
-for section in config.sections():
-    s = dict(config.items(section))
+def process_section(s, directory):
     r = requests.get(s["url"])
     soup = BeautifulSoup(r.text, "lxml")
     titles = soup.select(s["item_title"])
@@ -79,12 +66,15 @@ for section in config.sections():
         now = datetime.now(timezone("Europe/Berlin"))
         if dates is not None:
             datestr = dates[i].text.strip()
-            try:
-                date = datetime.strptime(datestr, s["item_date_format"])
-            except ValueError:
-                date = datetime.strptime(
-                    str(now.year) + "-" + datestr, s["item_date_format"]
-                )
+            formats = s["item_date_format"].split("|")
+            date = None
+            for form in formats:
+                try:
+                    date = datetime.strptime(datestr, form)
+                except ValueError:
+                    pass
+            if date is None:
+                raise ValueError("Date string '{}' has no valid formats: {}".format(datestr, formats))
             # Set default year to current year
             if date.year == 1900:
                 date = date.replace(year=now.year)
@@ -99,3 +89,28 @@ for section in config.sections():
         fe.published(date)
 
     fg.rss_file(os.path.join(directory, section.replace(" ", "_") + ".xml"))
+
+
+if len(sys.argv) > 1:
+    config_fn = sys.argv[1]
+else:
+    config_fn = "config.ini"
+
+config = configparser.ConfigParser()
+config.read(config_fn)
+
+try:
+    directory = config.get("options", "directory")
+except:
+    directory = "."
+
+config.remove_section("options")
+
+for section in config.sections():
+    s = dict(config.items(section))
+    try:
+        process_section(s, directory)
+    except Exception as e:
+        print("In {}:".format(section), file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+

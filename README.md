@@ -7,11 +7,16 @@ without being too much limited in functionality for me.
 So I hacked together this very simple rssify.py script.
 It reads from a config file your websites you want to rssify.
 It could be easily extened for more features if needed.
-For now it only parses the title and date via css selectors and generates
+For now it parses the title, url, date and content via css selectors and generates
 a feed.xml file which can be imported into newsboat/newsbeuter or I guess any
 other rss reader.
 
-It can also evaluate set an url for each link, either obtaining the 'href' attribute of an 'a' element or evaluating an expression over the 'item_url' element.
+For title, url and content, you can evaluate an expression over the
+'item_title', 'item_url' or 'item_content' element, which are in a variable
+named 'title', 'url' or 'content'. If no function is defined, it gets text,
+href and text respectively by default.
+
+You can specify several date formats separated by '|'.
 
 ```config.ini
 [options]
@@ -36,6 +41,15 @@ url = https://www.fanfiction.net/s/#######/
 item_title = span > select#chap_select > option
 item_url = span > select#chap_select > option
 item_url_function = '/s/#######/' + url.get('value') + '/Example'
+
+[Steam Curator Example - substitute ######## for curator id and name]
+url = https://store.steampowered.com/curator/########/
+item_title = .recommendation_link
+item_title_function = re.match(r'https://store\.steampowered\.com/app/[0-9]+/(.+)/.*', title.get('href')).group(1)
+item_url = .recommendation_link
+item_content = .recommendation_desc
+item_date = .curator_review_date
+item_date_format = %%B %%d|%%B %%d, %%Y
 ```
 
 The script runs once daily in a cronjob on my local machine.
