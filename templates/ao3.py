@@ -1,0 +1,5 @@
+url = "https://archiveofourown.org/works/([0-9]+)/navigate"
+item_title = ".chapter > li > a"
+item_url = ".chapter > li > a"
+item_date = ".chapter > li > .datetime"
+item_date_format = r"(%Y-%m-%d)"
