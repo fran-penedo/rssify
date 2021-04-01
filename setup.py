@@ -15,10 +15,9 @@ config = {
         "requests>=2.25.1",
     ],
     "extras_require": {},
-    "py_modules": ["rssify"],
-    # "scripts": ["rssify.py"],
+    "packages": ["rssify"],
     "entry_points": {
-        "console_scripts": ["rssify=rssify:main"],
+        "console_scripts": ["rssify=rssify.core:main"],
     },
     "name": "rssify",
 }
