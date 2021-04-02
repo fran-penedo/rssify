@@ -14,7 +14,7 @@ config = {
         "feedgen>=0.9.0",
         "requests>=2.25.1",
     ],
-    "extras_require": {},
+    "extras_require": {"server": ["flask>=1.1.2"]},
     "packages": ["rssify"],
     "entry_points": {
         "console_scripts": ["rssify=rssify.core:main"],

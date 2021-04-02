@@ -1,4 +1,5 @@
 url = "https://archiveofourown.org/works/([0-9]+)/navigate"
+name = "#main .heading a:first-of-type"
 item_title = ".chapter > li > a"
 item_url = ".chapter > li > a"
 item_date = ".chapter > li > .datetime"

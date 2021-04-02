@@ -28,6 +28,8 @@ if os.environ.get("XDG_CONFIG_HOME"):
 class Template(object):
     url: str
     item_title: str
+    name: Optional[str] = None  # This is a selector, not an actual name
+    name_f: Callable[[Any, Sequence[str]], str] = lambda x, y: x[0].text
     item_title_f: Callable[[Any, Sequence[str]], str] = lambda x, y: x.text
     item_url: Optional[str] = None
     item_url_f: Callable[[Any, Sequence[str]], str] = lambda x, y: x.get("href")
@@ -42,11 +44,22 @@ class Template(object):
         return cls(**{v: getattr(m, v) for v in dir(m) if v in attr.fields_dict(cls)})
 
 
-def process_template(template: Template, name: str, directory: str) -> None:
+class InvalidFeedNameSelectorException(Exception):
+    def __init__(self, selector: Optional[str]) -> None:
+        super().__init__(f"Name selector returned empty set: {selector}")
+
+
+def process_template(template: Template, name: str) -> FeedGenerator:
     r = requests.get(template.url)
     soup = BeautifulSoup(r.text, "lxml")
     titles = soup.select(template.item_title)
     urls = soup.select(template.item_url)
+
+    if name == "":
+        resultset = soup.select(template.name)
+        if len(resultset) == 0:
+            raise InvalidFeedNameSelectorException(template.name)
+        name = template.name_f(soup.select(template.name), template.url_groups)
 
     if template.item_date is not None:
         dates = soup.select(template.item_date)
@@ -102,7 +115,13 @@ def process_template(template: Template, name: str, directory: str) -> None:
 
         fe.published(date)
 
-    fg.rss_file(os.path.join(directory, name.replace(" ", "_") + ".xml"))
+    return fg
+
+
+def write_feed(fg: FeedGenerator, name: str, directory: str) -> str:
+    feed_fn = name.replace(" ", "_") + ".xml"
+    fg.rss_file(os.path.join(directory, feed_fn))
+    return feed_fn
 
 
 def load_templates(dirname: str) -> list[Template]:
@@ -130,6 +149,7 @@ def add_to_config(url: str, name: str, config: configparser.ConfigParser):
 class Options(object):
     config: str = "./config.ini"
     templates: str = "./templates"
+    feeds_url: str = "http://127.0.0.1:5000"
     directory: str = "."
     cmd: str = "update"
     url: str = ""
@@ -160,7 +180,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     cmds = parser.add_subparsers(dest="cmd")
     add = cmds.add_parser("add")
     add.add_argument("url")
-    add.add_argument("name")
+    add.add_argument("name", nargs="?")
     cmds.add_parser("update")
     rm = cmds.add_parser("remove")
     rm.add_argument("name")
@@ -186,50 +206,85 @@ def parse_config() -> Tuple[Options, configparser.ConfigParser]:
     return options, config
 
 
-def main() -> None:
+def setup() -> Tuple[Options, configparser.ConfigParser, list[Template]]:
     opts, config = parse_config()
     if not os.path.exists(opts.directory):
         os.makedirs(opts.directory)
 
     templates = load_templates(opts.templates)
 
-    if opts.cmd == "update":
-        config.remove_section("options")
+    return opts, config, templates
 
-        for section in config.sections():
-            s = dict(config.items(section))
-            temp = next(
-                (t for t in templates if (match := re.match(t.url, s["url"]))), None
-            )
-            if temp is None:
-                temp = Template(**s)  # type: ignore # config should be well written or this throws exception
-            else:
-                assert match is not None
-                temp.url_groups = match.groups()
-            temp.url = s["url"]
+
+def update(
+    opts: Options, config: configparser.ConfigParser, templates: list[Template]
+) -> None:
+    config.remove_section("options")
+
+    for section in config.sections():
+        s = dict(config.items(section))
+        temp = next(
+            (t for t in templates if (match := re.match(t.url, s["url"]))), None
+        )
+        if temp is None:
+            temp = Template(**s)  # type: ignore # config should be well written or this throws exception
+        else:
+            assert match is not None
+            temp.url_groups = match.groups()
+        temp.url = s["url"]
+        try:
+            fg = process_template(temp, section)
+            write_feed(fg, section, opts.directory)
+        except Exception as e:
+            print("In {}:".format(section), file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+
+
+class NoTemplateForLinkException(Exception):
+    def __init__(self, url: str):
+        super().__init__(f"No template found for url: {url}")
+
+
+def add(
+    opts: Options, config: configparser.ConfigParser, templates: list[Template]
+) -> str:
+    temp = next((t for t in templates if re.match(t.url, opts.url)), None)
+    if temp is not None:
+        temp.url = opts.url
+        try:
+            fg = process_template(temp, opts.name)
+            feed_fn = write_feed(fg, fg.title(), opts.directory)
             try:
-                process_template(temp, section, opts.directory)
-            except Exception as e:
-                print("In {}:".format(section), file=sys.stderr)
-                traceback.print_exc(file=sys.stderr)
-
-    elif opts.cmd == "add":
-        temp = next((t for t in templates if re.match(t.url, opts.url)), None)
-        if temp is not None:
-            temp.url = opts.url
-            try:
-                process_template(temp, opts.name, opts.directory)
-                add_to_config(temp.url, opts.name, config)
-                with open(opts.config, "w") as f:
-                    config.write(f)
-            except:
-                raise
-
-    elif opts.cmd == "remove":
-        if opts.name in config.sections():
-            config.remove_section(opts.name)
+                add_to_config(temp.url, fg.title(), config)
+            except configparser.DuplicateSectionError:
+                pass
             with open(opts.config, "w") as f:
                 config.write(f)
+            return feed_fn
+        except:
+            raise
+    else:
+        raise NoTemplateForLinkException(opts.url)
+
+
+def remove(
+    opts: Options, config: configparser.ConfigParser, templates: list[Template]
+) -> None:
+    if opts.name in config.sections():
+        config.remove_section(opts.name)
+        with open(opts.config, "w") as f:
+            config.write(f)
+
+
+def main() -> None:
+    opts, config, templates = setup()
+
+    if opts.cmd == "update":
+        update(opts, config, templates)
+    elif opts.cmd == "add":
+        add(opts, config, templates)
+    elif opts.cmd == "remove":
+        remove(opts, config, templates)
 
 
 if __name__ == "__main__":

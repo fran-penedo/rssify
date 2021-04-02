@@ -1,6 +1,7 @@
 import re
 
 url = r"https://store.steampowered.com/curator/[0-9a-zA-Z-]+/"
+name = ".curator_name a"
 item_title = ".recommendation_link"
 
 
