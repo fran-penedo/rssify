@@ -1,55 +1,72 @@
-Forked from https://github.com/h43z/rssify.
+# Rssify
 
-I looked at a few online services that provide custom created RSS feeds
-for websites that don't have one. None of them were free of charge 
-without being too much limited in functionality for me.
+(Based on https://github.com/h43z/rssify.)
 
-So I hacked together this very simple rssify.py script.
-It reads from a config file your websites you want to rssify.
-It could be easily extened for more features if needed.
-For now it parses the title, url, date and content via css selectors and generates
-a feed.xml file which can be imported into newsboat/newsbeuter or I guess any
-other rss reader.
+Rssify is a tool that builds RSS feeds from websites that don't have one.
+It reads from a config file the websites you want to rssify, parsing title, url, date
+and content via css selectors. The feed is then written to a directory.
 
-For title, url and content, you can evaluate an expression over the
-'item_title', 'item_url' or 'item_content' element, which are in a variable
-named 'title', 'url' or 'content'. If no function is defined, it gets text,
-href and text respectively by default.
+Feeds can be manually described in the config file or using templates. A template is a
+python module that defines a url regex that matches the urls you want to rssify using
+the template, the css selectors for title, url, date and/or content, and functions that
+are applied to the selected html elements.
 
-You can specify several date formats separated by '|'.
+A server can be optionally deployed to provide an HTTP API to add websites to rssify and
+update the feeds. The server can be paired with a userscript to add websites covered by
+a template with a shortcut from a web browser.
 
-```config.ini
-[options]
-directory = /var/www/feeds/
+## Installation
 
-[Jodel Engineering Blog]
-url = https://jodel.com/engineering/
-item_title = .post-title > a
-item_date = .post-date
-item_date_format = %%b %%d, %%Y
-item_timezone = Europe/Berlin
+Clone the repository:
 
-[Ao3 Example - substitute ####### for fic id]
-url = https://archiveofourown.org/works/#######/navigate
-item_title = .chapter > li > a
-item_url = .chapter > li > a
-item_date = .chapter > li > .datetime
-item_date_format = (%%Y-%%m-%%d)
+    $ git clone https://github.com/fran-penedo/rssify
+    
+Install with PIP:
 
-[fanfiction.net Example - substitute ####### for fic id]
-url = https://www.fanfiction.net/s/#######/
-item_title = span > select#chap_select > option
-item_url = span > select#chap_select > option
-item_url_function = '/s/#######/' + url.get('value') + '/Example'
+    $ pip install rssify
+    
+Optionally, install server requirements:
 
-[Steam Curator Example - substitute ######## for curator id and name]
-url = https://store.steampowered.com/curator/########/
-item_title = .recommendation_link
-item_title_function = re.match(r'https://store\.steampowered\.com/app/[0-9]+/(.+)/.*', title.get('href')).group(1)
-item_url = .recommendation_link
-item_content = .recommendation_desc
-item_date = .curator_review_date
-item_date_format = %%B %%d|%%B %%d, %%Y
-```
+    $ pip install rssify[server]
 
-The script runs once daily in a cronjob on my local machine.
+Optionally, install the userscript. Install a userscript extension (for example,
+[Greasemonkey for
+firefox](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/)), then [click
+here to install the userscript](https://raw.githubusercontent.com/fran-penedo/rssify/master/userscript/rssify.user.js).
+
+## Usage
+
+CLI usage is given by:
+
+    $ rssify -h
+
+Deploy the server to localhost with:
+
+    $ rssify-server
+    
+If you want to deploy the server in a different setting, please refer to [Flask
+documentation](https://flask.palletsprojects.com/en/1.1.x/deploying/#deployment).
+
+The userscript provides the shortcut "C-S-u" to add a website to rssify. Make sure to
+modify the URL if you deploy the server somewhere else.
+
+You can update your feeds running rssify in a CRON job, or you can use the /update API
+call for the server. If you add a website to the config manually, make sure to restart
+the server.
+
+## Copyright and Warranty Information
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+Copyright (C) 2020-2021, Francisco Penedo Alvarez (contact@franpenedo.com)

@@ -175,17 +175,24 @@ def parse_config_file(fn: str) -> Tuple[Options, configparser.ConfigParser]:
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--config")
-    parser.add_argument("--templates")
-    parser.add_argument("--directory")
-    cmds = parser.add_subparsers(dest="cmd")
-    add = cmds.add_parser("add")
-    add.add_argument("url")
-    add.add_argument("name", nargs="?")
-    cmds.add_parser("update")
-    rm = cmds.add_parser("remove")
-    rm.add_argument("name")
+    parser = argparse.ArgumentParser(description="Rssifies websites")
+    parser.add_argument("--config", help="Path to a config file")
+    parser.add_argument("--templates", help="Path to the templates directory")
+    parser.add_argument("--directory", help="Path to save generated feeds to")
+    cmds = parser.add_subparsers(
+        dest="cmd",
+        help="Rssify command. If no command is specified, runs `rssify update`",
+    )
+    add = cmds.add_parser("add", help="Adds a website to rssify. Must match a template")
+    add.add_argument("url", help="URL of the website to rssify")
+    add.add_argument(
+        "name",
+        nargs="?",
+        help="Title for the RSS feed. Can be omitted if the template defines a `name`",
+    )
+    cmds.add_parser("update", help="Updates feeds. Default command")
+    rm = cmds.add_parser("remove", help="Removes a website")
+    rm.add_argument("name", help="Name of the website to remove")
 
     return parser
 

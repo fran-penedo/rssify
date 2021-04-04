@@ -17,7 +17,10 @@ config = {
     "extras_require": {"server": ["flask>=1.1.2"]},
     "packages": ["rssify"],
     "entry_points": {
-        "console_scripts": ["rssify=rssify.core:main"],
+        "console_scripts": [
+            "rssify=rssify.core:main",
+            "rssify-server=rssify.server:main",
+        ],
     },
     "name": "rssify",
 }

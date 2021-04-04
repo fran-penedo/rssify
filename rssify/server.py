@@ -43,7 +43,11 @@ def setup() -> Flask:
     return app
 
 
-if __name__ == "__main__":
+def main() -> None:
     app = setup()
     app.logger.debug("Setup complete")
     app.run()
+
+
+if __name__ == "__main__":
+    main()

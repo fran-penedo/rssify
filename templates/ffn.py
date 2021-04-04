@@ -1,3 +1,5 @@
+# Currently does not work due to ffn blocking non-human access
+
 url = r"https://www.fanfiction.net/s/([0-9]+)/"
 name = "#profile_top b"
 item_title = "span > select#chap_select > option"
