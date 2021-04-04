@@ -14,4 +14,4 @@ def item_title_f(title, url_groups):
 item_url = ".recommendation_link"
 item_content = ".recommendation_desc"
 item_date = ".curator_review_date"
-item_date_format = r"%d %B|%d %B, %Y"
+item_date_format = r"%d %B|%d %B, %Y|%B %d|%B %d, %Y"
