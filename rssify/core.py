@@ -247,7 +247,7 @@ def update(
         else:
             match = re.match(temp.url, s["url"])
             assert match is not None
-            temp = Template(*attr.asdict(temp))  # type: ignore
+            temp = Template(**attr.asdict(temp))
             temp.url_groups = match.groups()
         temp.url = s["url"]
         try:
