@@ -165,7 +165,8 @@ class Options(object):
 
 def parse_config_file(fn: str) -> Tuple[Options, configparser.ConfigParser]:
     config = configparser.ConfigParser()
-    config.read(fn)
+    if len(config.read(fn)) == 0:
+        raise FileNotFoundError()
     options = Options()
 
     options.update(dict(config["options"]))
@@ -203,12 +204,16 @@ def parse_config() -> Tuple[Options, configparser.ConfigParser]:
     if args.config is not None:
         CONFIG_FILES.insert(0, args.config)
 
+    options = None
     for f in CONFIG_FILES:
         try:
             options, config = parse_config_file(f)
             break
         except FileNotFoundError:
             pass
+
+    if options is None:
+        raise Exception(f"No config file found. Tried: {CONFIG_FILES}")
 
     options.update(vars(args))
 
