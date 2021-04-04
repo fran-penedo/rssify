@@ -13,6 +13,11 @@ document.addEventListener('keyup', async e => {
     .then(data => {return data.json();})
     .then(data => {
       console.log("Obtained link %s with added status %s and reason %s", data["link"], data["added"], data["reason"]);
+      if (data["added"]) {
+        alert("Rssified website. Link to RSS feed:\n" + data["link"]);
+      } else {
+        alert("Couldn't rssify website. Reason: " + data["reason"]);
+      }
     });
   }
 });
