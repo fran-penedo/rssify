@@ -234,10 +234,15 @@ def update(
         s = dict(config.items(section))
         temp = next((t for t in templates if re.match(t.url, s["url"])), None)
         if temp is None:
-            temp = Template(**s)  # type: ignore # config should be well written or this throws exception
+            try:
+                temp = Template(**s)  # type: ignore # config should be well written or this throws exception
+            except TypeError as e:
+                raise Exception(f"Bad section {section} with options {s}") from e
+
         else:
             match = re.match(temp.url, s["url"])
             assert match is not None
+            temp = Template(*attr.asdict(temp))  # type: ignore
             temp.url_groups = match.groups()
         temp.url = s["url"]
         try:
