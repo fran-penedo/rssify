@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import configparser
 import importlib.util
@@ -13,8 +15,8 @@ from typing import Any, Callable, Optional, Sequence, Tuple
 
 import attr
 import requests
-from bs4 import BeautifulSoup
-from feedgen.feed import FeedGenerator
+from bs4 import BeautifulSoup  # type: ignore
+from feedgen.feed import FeedGenerator  # type: ignore
 from pytz import timezone
 
 from tzlocal import get_localzone
@@ -134,7 +136,7 @@ def load_templates(dirname: str) -> list[Template]:
             temp = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(temp)  # type: ignore
             templates.append(Template.from_module(temp))
-        except:
+        except Exception:
             raise
 
     return templates
@@ -223,19 +225,18 @@ def update(
 
     for section in config.sections():
         s = dict(config.items(section))
-        temp = next(
-            (t for t in templates if (match := re.match(t.url, s["url"]))), None
-        )
+        temp = next((t for t in templates if re.match(t.url, s["url"])), None)
         if temp is None:
             temp = Template(**s)  # type: ignore # config should be well written or this throws exception
         else:
+            match = re.match(temp.url, s["url"])
             assert match is not None
             temp.url_groups = match.groups()
         temp.url = s["url"]
         try:
             fg = process_template(temp, section)
             write_feed(fg, section, opts.directory)
-        except Exception as e:
+        except Exception:
             print("In {}:".format(section), file=sys.stderr)
             traceback.print_exc(file=sys.stderr)
 
@@ -261,7 +262,7 @@ def add(
             with open(opts.config, "w") as f:
                 config.write(f)
             return feed_fn
-        except:
+        except Exception:
             raise
     else:
         raise NoTemplateForLinkException(opts.url)

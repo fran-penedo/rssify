@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import urllib.parse
 import os
 
@@ -15,7 +17,7 @@ def setup() -> Flask:
     opts, config, templates = rssify.setup()
 
     @app.route("/add", methods=["POST"])
-    def add_link():
+    def add_link() -> dict:
         opts.url = request.json["url"]
         app.logger.debug(f"{opts = }")
         app.logger.debug(f"{config = }")
@@ -32,6 +34,11 @@ def setup() -> Flask:
             response = {"link": "", "added": False, "reason": str(e)}
         app.logger.debug(f"{response = }")
         return response
+
+    @app.route("/update")
+    def update() -> str:
+        rssify.update(opts, config, templates)
+        return "Updated"
 
     return app
 
