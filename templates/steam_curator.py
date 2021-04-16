@@ -6,7 +6,7 @@ item_title = ".recommendation_link"
 
 
 def item_title_f(title, url_groups):
-    re.match(
+    return re.match(
         r"https://store\.steampowered\.com/app/[0-9]+/(.+)/.*", title.get("href")
     ).group(1)
 
