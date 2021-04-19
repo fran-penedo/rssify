@@ -51,9 +51,22 @@ class InvalidFeedNameSelectorException(Exception):
         super().__init__(f"Name selector returned empty set: {selector}")
 
 
+def _get_soup(url: str) -> BeautifulSoup:
+    o = urlparse.urlparse(url)
+    if o.scheme.startswith("http"):
+        r = requests.get(url)
+        text = r.text
+    elif o.scheme == "file":
+        with open(o.path, "r") as f:
+            text = f.read()
+    else:
+        raise Exception("Non supported protocol for URL: {url}")
+
+    return BeautifulSoup(text, "lxml")
+
+
 def process_template(template: Template, name: str) -> FeedGenerator:
-    r = requests.get(template.url)
-    soup = BeautifulSoup(r.text, "lxml")
+    soup = _get_soup(template.url)
     titles = soup.select(template.item_title)
     urls = soup.select(template.item_url)
 
