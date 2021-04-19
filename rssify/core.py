@@ -281,6 +281,7 @@ def add(
 ) -> str:
     temp = next((t for t in templates if re.match(t.url, opts.url)), None)
     if temp is not None:
+        temp = Template(**attr.asdict(temp))  # type: ignore # config should be well written or this throws exception
         temp.url = opts.url
         try:
             fg = process_template(temp, opts.name)
