@@ -246,9 +246,10 @@ def setup() -> Tuple[Options, configparser.ConfigParser, list[Template]]:
 def update(
     opts: Options, config: configparser.ConfigParser, templates: list[Template]
 ) -> None:
-    config.remove_section("options")
-
     for section in config.sections():
+        if section == "options":
+            continue
+
         s = dict(config.items(section))
         temp = next((t for t in templates if re.match(t.url, s["url"])), None)
         if temp is None:
