@@ -57,7 +57,9 @@ def _get_soup(url: str) -> BeautifulSoup:
         r = requests.get(url)
         text = r.text
     elif o.scheme == "file":
-        with open(o.path, "r") as f:
+        # Can't use o.path as url is not urlencoded ('?' interpreted as query, etc)
+        path = url[len("file://") :]
+        with open(path, "r") as f:
             text = f.read()
     else:
         raise Exception("Non supported protocol for URL: {url}")
